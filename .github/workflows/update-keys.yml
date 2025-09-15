@@ -1,0 +1,24 @@
+name: Update Keys
+
+on:
+  push:
+    paths:
+      - "update-keys.json"
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Copy update file to keys.json
+        run: cp update-keys.json keys.json
+
+      - name: Commit & Push keys.json
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add keys.json
+          git commit -m "Update keys.json from Admin Panel"
+          git push
