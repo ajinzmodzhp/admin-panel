@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      width: 380px;
+      max-height: 90vh;
+      overflow-y: auto;
+      text-align: center;
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    h2, h3 {
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+    input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      font-size: 15px;
+      outline: none;
+      background: #0f172a;
+      color: #fff;
+    }
+    button {
+      display: inline-block;
+      padding: 10px 14px;
+      margin: 6px 4px;
+      background: #3b82f6;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.25s ease;
+      box-shadow: 0 4px 10px rgba(59,130,246,0.3);
+    }
+    button:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(59,130,246,0.5);
+    }
+    .hidden {
+      display: none;
+    }
+    .key-list {
+      text-align: left;
+      margin-top: 15px;
+    }
+    .key-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #334155;
+      padding: 8px 12px;
+      border-radius: 10px;
+      margin: 5px 0;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .key-item:hover {
+      background: #475569;
+    }
+    .exp-box {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 15px;
+      border: 1px solid #3b82f6;
+    }
+    #searchInput {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      margin: 10px 0;
+      font-size: 14px;
+      outline: none;
+      background: #0f172a;
+      color: #fff;
+    }
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div class="card" id="loginBox">
+    <h2>🔑 Secure Admin Login</h2>
+    <input type="password" id="licenseInput" placeholder="Enter License Key">
+    <button onclick="checkKey()">Login</button>
+    <p id="errorMsg" style="color:red; display:none;">❌ Invalid Key!</p>
+  </div>
+
+  <!-- Admin Panel -->
+  <div class="card hidden" id="adminPanel">
+    <h2>⚙️ Owner Panel</h2>
+    <button onclick="showRevoke()">🗑️ Revoke Key</button>
+    <button onclick="showGenerate()">➕ Generate Key</button>
+    <button onclick="showStats()">📊 Statistics</button>
+
+    <!-- Revoke Section -->
+    <div id="revokeSection" class="hidden">
+      <h3>🗑️ Manage Keys</h3>
+      <input type="text" id="searchInput" placeholder="Search key..." onkeyup="searchKeys()">
+      <div id="keyList" class="key-list"></div>
+    </div>
+
+    <!-- Generate Section -->
+    <div id="generateSection" class="hidden exp-box">
+      <h3>CHOOSE EXPIRATION:</h3>
+      <input type="text" id="expirationInput" placeholder="e.g., 1D, 1H, LT">
+      <button onclick="generateKey()">Confirm Generate</button>
+    </div>
+  </div>
+
+<script>
+  const correctKey = "S}!?K5:'K?F(K-??Ry!K0M45s7x50MV-;k*";
+
+  let keys = JSON.parse(localStorage.getItem("keys")) || [];
+  let revokedCount = JSON.parse(localStorage.getItem("revokedCount")) || 0;
+
+  function saveKeys() {
+    localStorage.setItem("keys", JSON.stringify(keys));
+    localStorage.setItem("revokedCount", revokedCount);
+  }
+
+  function checkKey() {
+    const input = document.getElementById("licenseInput").value;
+    if (input === correctKey) {
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("adminPanel").classList.remove("hidden");
+    } else {
+      document.getElementById("errorMsg").style.display = "block";
+    }
+  }
+
+  function showGenerate() {
+    document.getElementById("generateSection").classList.remove("hidden");
+    document.getElementById("revokeSection").classList.add("hidden");
+  }
+
+  function generateKey() {
+    const expInput = document.getElementById("expirationInput").value.trim().toUpperCase();
+    if (!expInput) {
+      alert("⚠️ Please enter an expiration (e.g., 1D, 1H, LT)");
+      return;
+    }
+    const newKey = "AK-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    keys.push({ key: newKey, expiration: expInput });
+    saveKeys();
+
+    alert(`✅ Generated Key: ${newKey}\nExpiration: ${expInput}`);
+    document.getElementById("expirationInput").value = "";
+  }
+
+  function showRevoke() {
+    const section = document.getElementById("revokeSection");
+    const list = document.getElementById("keyList");
+    list.innerHTML = "";
+
+    if (keys.length === 0) {
+      list.innerHTML = "<p>No active keys available.</p>";
+    } else {
+      keys.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "key-item";
+        div.innerHTML = `
+          <span>${item.key} (${item.expiration})</span>
+          <button onclick="deleteKey(${index})">Delete</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    section.classList.remove("hidden");
+    document.getElementById("generateSection").classList.add("hidden");
+  }
+
+  function deleteKey(index) {
+    if (confirm("Are you sure you want to revoke this key?")) {
+      keys.splice(index, 1);
+      revokedCount++;
+      saveKeys();
+      showRevoke();
+    }
+  }
+
+  function showStats() {
+    const total = keys.length + revokedCount;
+    alert(`📊 Statistics\nTotal Keys Ever: ${total}\nActive: ${keys.length}\nRevoked: ${revokedCount}`);
+  }
+
+  function searchKeys() {
+    const filter = document.getElementById("searchInput").value.toUpperCase();
+    const list = document.getElementById("keyList");
+    const items = list.getElementsByClassName("key-item");
+
+    for (let i = 0; i < items.length; i++) {
+      const text = items[i].innerText.toUpperCase();
+      items[i].style.display = text.includes(filter) ? "" : "none";
+    }
+  }
+</script>
+
+</body>
+</html>
